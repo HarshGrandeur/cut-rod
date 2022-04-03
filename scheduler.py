@@ -24,20 +24,41 @@ class Scheduler:
         try:
             self.file_path = self.input_dir + "/" + self.file_name
             self.file_size = os.stat(self.file_path)
-            # self.n_file_split = math.floor(self.file_size / self.n_mappers) 
-            print("file_size: ", self.file_size.st_size)
-
+            
         except FileNotFoundError:
             print(f"File {self.file_name} does not exist.  Aborting")
             sys.exit(1)
 
         ## read the file contents
-        print("path" , self.file_path)
-        ## print the file contents
+        contents = ""
+        n_lines = 0
         with open(self.file_path, 'r') as f:
             contents = f.readlines()
-            for line in contents:
-                print(line)
+
+        ## split the file into n_mappers 
+        for lines in contents:
+            n_lines += 1
+
+        n_lines_in_each_split = math.floor(n_lines / self.n_mappers)
+        line_number = 0
+
+        file_descriptors = [''] * self.n_mappers
+        for mapper in range(self.n_mappers):
+            file_path = self.input_dir + "/" + str(mapper) + ".txt"
+            file =  open(file_path, 'w')
+            file_descriptors[mapper] = file
+
+        start = 0
+        for line in contents:
+            index = start % self.n_mappers
+            file_descriptors[index].write(line)
+            start += 1
+
+        ## close all fiel descriptors
+        for mapper in range(self.n_mappers):
+            file_descriptors[mapper].close()
+
+
 
         
         
