@@ -1,0 +1,24 @@
+☐ User provides input file
+    Arguements
+    ☐ File
+    ☐ No of mappers and reducers
+    ☐ Map and reduce function
+
+☐ User input goes to the mapper
+    Tasks
+    ☐ Splits input file into no of mappers
+    ☐ Creates processes equal to the number of mappers
+    ☐ Sends each file split to each mapper over sockets @confirm 
+    ☐ Excutes map function on each mapper and stores the result to a file
+
+☐ Mapper output goes to Shuffle & Sort
+    ☐ reads each mapper output and sends sorts by key
+    ☐ starts reducers
+    ☐ sends each (key, list(value)) to each reducers. How ? @question 
+
+☐ Reducers  reads output of mappers
+    ☐ Divide keys into no of reducers 
+    ☐ Sends each (key, list(value)) to each reducers
+    ☐ Execute the reduce function on each reducer
+
+    
