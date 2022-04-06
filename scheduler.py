@@ -3,7 +3,7 @@ import math
 import sys
 import json
 import settings
-from multiprocessing import Process
+from multiprocessing import Process, Pool
 
 class Scheduler:
     """"
@@ -54,11 +54,17 @@ class Scheduler:
             file_descriptors[index].write(line)
             start += 1
 
-        ## close all fiel descriptors
+        ## close all file descriptors
         for mapper in range(self.n_mappers):
             file_descriptors[mapper].close()
 
 
+def mapper(self, file_path, map):
+    contenst = ''
+    with open(self.file_path, 'r') as f:
+            contents = f.readlines()
 
+    for line in contents:
+        map(line)
         
         
