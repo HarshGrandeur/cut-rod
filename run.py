@@ -2,6 +2,7 @@
 
 import sys, getopt
 from scheduler import Scheduler
+from reducer import Reducer
 
 def main(argv):
     file_name = argv[1]
@@ -9,6 +10,8 @@ def main(argv):
     n_reducers =  int(argv[3])
     sc = Scheduler(n_mappers=n_mappers, file_name=file_name, n_reducers=n_reducers)
     sc.split_input_files()
+    reducer = Reducer()
+    reducer.reducer()
 
 
 def map(line):

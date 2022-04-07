@@ -4,6 +4,8 @@ import sys
 import json
 import settings
 from multiprocessing import Process, Pool
+from multiprocessing.connection import Listener
+from array import array
 
 class Scheduler:
     """"
@@ -60,11 +62,18 @@ class Scheduler:
 
 
 def mapper(self, file_path, map):
+    address = ('localhost', settings.port)
     contenst = ''
     with open(self.file_path, 'r') as f:
             contents = f.readlines()
 
-    for line in contents:
-        map(line)
-        
-        
+    with Listener(address, authkey=b'secret password') as listener:
+            with listener.accept() as conn:
+                for line in contents:
+                    map_output = map(line)
+                    print('connection accepted from', listener.last_accepted)
+                    conn.send_bytes(str.encode(map_output))
+
+
+                    
+

@@ -7,4 +7,6 @@ default_output_dir = "output_files"
 # set default number for the map and reduce threads
 default_n_mappers = 4
 default_n_reducers = 4
+##port number
+port=6000
 
