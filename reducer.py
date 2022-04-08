@@ -8,11 +8,12 @@ class Reducer:
         self.address = ('localhost', port)
 
     def reducer(self):
-        print(time.time())
         with Client(self.address, authkey=b'secret password') as conn:
             try:
                 while(True):
-                    print(conn.recv())
+                    print('start')
+                    #conn.recv()
+                    print('end')
             except EOFError:
                 print("EOF")
 

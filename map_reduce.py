@@ -1,9 +1,8 @@
-def map(line):
-    arr = line.split()
-    if not arr:
-        return (0, 0)
+import re
 
-    return [(key, 1) for key in arr]
+def map(line):
+    arr = re.split(r"\W+", line)
+    return [(key.lower(), 1) for key in arr]
 
 def reduce(key, list):
     count = 0
