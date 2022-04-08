@@ -6,6 +6,7 @@ import settings
 from multiprocessing import Process, Pool
 from multiprocessing.connection import Listener
 from array import array
+from map_reduce import *
 
 class Scheduler:
     """"
@@ -60,19 +61,30 @@ class Scheduler:
         for mapper in range(self.n_mappers):
             file_descriptors[mapper].close()
 
+    def launch_mappers(self):
+        for i in range(self.n_mappers):
+            file_path = self.input_dir + "/" + str(i) + ".txt"
+            p = Process(target=self.mapper, args=(file_path,map))
+            p.start()
+            p.join()
+        
 
-def mapper(self, file_path, map):
-    address = ('localhost', settings.port)
-    contenst = ''
-    with open(self.file_path, 'r') as f:
-            contents = f.readlines()
+    def mapper(self, file_path, map):
+        print('Inside mapper', os.getpid())
+        # address = ('localhost', settings.port)
+        contents = ''
+        with open(self.file_path, 'r') as f:
+                contents = f.readlines()
 
-    with Listener(address, authkey=b'secret password') as listener:
-            with listener.accept() as conn:
-                for line in contents:
-                    map_output = map(line)
-                    print('connection accepted from', listener.last_accepted)
-                    conn.send_bytes(str.encode(map_output))
+        for line in contents:
+            result = map(line)
+            print(result)
+        # with Listener(address, authkey=b'secret password') as listener:
+        #         with listener.accept() as conn:
+        #             for line in contents:
+        #                 map_output = map(line)
+        #                 print('connection accepted from', listener.last_accepted)
+        #                 conn.send_bytes(str.encode(map_output))
 
 
                     

@@ -6,7 +6,6 @@ class Reducer:
     def __init__(self, port=6000):
         self.address = ('localhost', port)
         
-        
 
     def reducer(self):
         with Client(self.address, authkey=b'secret password') as conn:
