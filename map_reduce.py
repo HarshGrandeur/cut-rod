@@ -1,6 +1,9 @@
 def map(line):
-    arr = line.split(',')
-    return (arr[1], 1)
+    arr = line.split()
+    if not arr:
+        return (0, 0)
+
+    return [(key, 1) for key in arr]
 
 def reduce(key, list):
     count = 0

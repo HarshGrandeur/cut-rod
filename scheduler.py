@@ -64,24 +64,21 @@ class Scheduler:
     def launch_mappers(self):
         for i in range(self.n_mappers):
             file_path = self.input_dir + "/" + str(i) + ".txt"
-            p = Process(target=self.mapper, args=(file_path,map))
+            p = Process(target=self.mapper, args=(file_path, map, i))
             p.start()
-            p.join()
-        
+        p.join()
 
-    def mapper(self, file_path, map):
+    def mapper(self, file_path, map, i):
         print('Inside mapper', os.getpid())
-        address = ('localhost', settings.port)
+        address = ('localhost', settings.port + i)
         contents = ''
+        
         with open(self.file_path, 'r') as f:
-                contents = f.readlines()
+            contents = f.readlines()
 
         with Listener(address, authkey=b'secret password') as listener:
-                with listener.accept() as conn:
-                    for line in contents:
-                        map_output = map(line)
-                        conn.send(map_output)
-
-
-                    
-
+            with listener.accept() as conn:
+                for line in contents:
+                    map_output = map(line)
+                    for m in map_output:
+                        conn.send(m)
