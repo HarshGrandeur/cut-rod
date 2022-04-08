@@ -71,20 +71,16 @@ class Scheduler:
 
     def mapper(self, file_path, map):
         print('Inside mapper', os.getpid())
-        # address = ('localhost', settings.port)
+        address = ('localhost', settings.port)
         contents = ''
         with open(self.file_path, 'r') as f:
                 contents = f.readlines()
 
-        for line in contents:
-            result = map(line)
-            print(result)
-        # with Listener(address, authkey=b'secret password') as listener:
-        #         with listener.accept() as conn:
-        #             for line in contents:
-        #                 map_output = map(line)
-        #                 print('connection accepted from', listener.last_accepted)
-        #                 conn.send_bytes(str.encode(map_output))
+        with Listener(address, authkey=b'secret password') as listener:
+                with listener.accept() as conn:
+                    for line in contents:
+                        map_output = map(line)
+                        conn.send(map_output)
 
 
                     

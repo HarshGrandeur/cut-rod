@@ -10,5 +10,10 @@ class Reducer:
     def reducer(self):
         with Client(self.address, authkey=b'secret password') as conn:
             print(conn.recv())                  # => [2.25, None, 'junk', float]
-            reducer_input =  conn.recv_bytes()
-            print(reducer_input.decode())
+            # reducer_input =  conn.recv_bytes()
+            # print(reducer_input.decode())
+
+
+if __name__ == "__main__":
+   reducer = Reducer()
+   reducer.reducer()
