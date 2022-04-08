@@ -1,9 +1,8 @@
 import os
 import math
 import sys
-import json
 import settings
-from multiprocessing import Process, Pool
+from multiprocessing import Process
 from multiprocessing.connection import Listener
 from array import array
 from map_reduce import *
@@ -64,11 +63,15 @@ class Scheduler:
             file_descriptors[mapper].close()
 
     def launch_mappers(self):
+        processes = []
         for i in range(self.n_mappers):
             file_path = self.input_dir + "/" + str(i) + ".txt"
             p = Process(target=self.mapper, args=(file_path, map, i))
             p.start()
-        p.join()
+            processes.append(p)
+        
+        for p in processes:
+            p.join()
 
     def mapper(self, file_path, map, i):
         print('Inside mapper', os.getpid())
