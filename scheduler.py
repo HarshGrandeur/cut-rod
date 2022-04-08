@@ -19,6 +19,8 @@ class Scheduler:
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.file_name = file_name
+        self.address = ('localhost', settings.port)
+        self.listener = Listener(self.address, authkey=b'secret password') 
 
     """
     Split input file into no of mappers
@@ -70,15 +72,13 @@ class Scheduler:
 
     def mapper(self, file_path, map, i):
         print('Inside mapper', os.getpid())
-        address = ('localhost', settings.port + i)
+        address = ('localhost', settings.port)
         contents = ''
         
         with open(self.file_path, 'r') as f:
             contents = f.readlines()
 
-        with Listener(address, authkey=b'secret password') as listener:
-            with listener.accept() as conn:
-                for line in contents:
-                    map_output = map(line)
-                    for m in map_output:
-                        conn.send(m)
+        with self.listener.accept() as conn:
+            for line in contents:
+                map_output = map(line)
+                conn.send(map_output)
