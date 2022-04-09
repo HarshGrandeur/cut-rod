@@ -82,13 +82,10 @@ class Scheduler:
         processes = []
 
         self.combined = output.get()
-        print(len(self.combined))
-        print()
         
         # Now here we start the reducers
         i = 0
         for chunk in chunked(self.combined.items(), ceil(len(self.combined) / self.n_reducers)):
-            print(len(chunk))
             file_path = self.output_dir + "/" + str(i) + ".txt"
             i += 1
             p = Process(target=self.reducer, args=(file_path, chunk))
@@ -112,20 +109,16 @@ class Scheduler:
         q.put(('EOF', 1))
 
     def sort(self, q, output):
-        try:
-            while True:
-                s = q.get()
-                if not s or s[0] == 'EOF':
-                    break
+        while not q.empty():
+            s = q.get()
+            if not s or s[0] == 'EOF':
+                continue
 
-                key, value = s
-                if key in self.combined:
-                    self.combined[key].append(value)
-                else:
-                    self.combined[key] = [value]
-                
-        except EOFError:
-            pass
+            key, value = s
+            if key in self.combined:
+                self.combined[key].append(value)
+            else:
+                self.combined[key] = [value]
 
         output.put(self.combined)
 
