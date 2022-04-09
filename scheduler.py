@@ -3,6 +3,7 @@ from map_reduce import *
 from math import ceil
 from multiprocessing import Process, Queue
 from utils import chunked
+import signal
 
 class Scheduler:
     """"
@@ -28,7 +29,6 @@ class Scheduler:
         except FileNotFoundError:
             print(f"File {self.file_name} does not exist. Aborting")
             sys.exit(1)
-
         # Read the file contents
         contents = ""
         n_lines = 0
@@ -60,6 +60,8 @@ class Scheduler:
 
     def launch_mappers(self):
         processes = []
+        # calculate running time
+        start_time = time.time()
         
         # Start all the mappers in parallel
         for i in range(self.n_mappers):
@@ -72,6 +74,9 @@ class Scheduler:
         # For the lazy setting, we need to join all the mappers
         # in the list `processes` (this means that sorting
         # will have to wait until all mappers are done)
+        for p in processes:
+            p.join()
+        processes = []  
         output = Queue()
         p = Process(target=self.sort, args = [self.queue, output])
         p.start()
@@ -95,6 +100,9 @@ class Scheduler:
         for p in processes:
             p.join()
 
+        end_time = time.time()
+        print("Running time : " + str(end_time - start_time))
+
     def mapper(self, file_path, map, q):
         contents = ''
         
@@ -107,6 +115,8 @@ class Scheduler:
                 q.put(m)
 
         q.put(('EOF', 1))
+        # terminate the process
+        os.kill(os.getpid(), signal.SIGTERM)
 
     def sort(self, q, output):
         while not q.empty():
