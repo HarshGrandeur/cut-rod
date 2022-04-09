@@ -111,9 +111,6 @@ class Scheduler:
     def sort(self, q, output):
         while not q.empty():
             s = q.get()
-            # if not s or s[0] == 'EOF':
-            #     continue
-
             key, value = s
             if key in self.combined:
                 self.combined[key].append(value)
