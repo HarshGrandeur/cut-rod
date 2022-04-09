@@ -3,6 +3,7 @@ from map_reduce import *
 from math import ceil
 from multiprocessing import Process, Queue
 from utils import chunked
+import signal
 
 class Scheduler:
     """"
@@ -60,7 +61,7 @@ class Scheduler:
 
     def launch_mappers(self):
         processes = []
-        
+        start_time = time.time()
         # Start all the mappers in parallel
         for i in range(self.n_mappers):
             file_path = self.input_dir + "/" + str(i) + ".txt"
@@ -95,6 +96,9 @@ class Scheduler:
         for p in processes:
             p.join()
 
+        end_time = time.time()
+        print("Running time : " + str(end_time - start_time))
+
     def mapper(self, file_path, map, q):
         contents = ''
         
@@ -107,6 +111,8 @@ class Scheduler:
                 q.put(m)
 
         q.put(('EOF', 1))
+        ## terminate the process here
+        os.kill(os.getpid(), signal.SIGTERM)
 
     def sort(self, q, output):
         while not q.empty():
