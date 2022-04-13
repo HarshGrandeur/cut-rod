@@ -116,7 +116,7 @@ class Scheduler:
 
         q.put(('EOF', 1))
         # terminate the process
-        os.kill(os.getpid(), signal.SIGTERM)
+        # os.kill(os.getpid(), signal.SIGTERM)
 
     def sort(self, q, output):
         while not q.empty():
