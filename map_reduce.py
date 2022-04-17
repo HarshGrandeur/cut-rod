@@ -1,8 +1,8 @@
 import re
 
 def map(line):
-    arr = re.split(r"\W+", line)
-    return [(key.lower(), 1) for key in arr]
+    arr = re.split(r",", line)
+    return [(arr[0], 1) ]
 
 def reduce(key, list):
     count = 0
