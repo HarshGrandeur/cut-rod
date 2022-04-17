@@ -81,8 +81,10 @@ class Scheduler:
             # in the list `processes` (this means that sorting
             # will have to wait until all mappers are done)
             for p in processes:
-                p.join()
+                if p.is_alive():
+                    p.join()
             processes = [] 
+            ## start shuffle and sort
             output = manager.Queue()
             p = Process(target=self.sort, args = [queue, output])
             p.start()
