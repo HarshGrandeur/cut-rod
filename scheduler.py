@@ -21,7 +21,6 @@ class Scheduler:
         self.manager = Manager()
         self.queue = self.manager.Queue()
         self.combined = {}
-        self.dq = deque()
 
     """
     Split input file into no of mappers
@@ -125,7 +124,6 @@ class Scheduler:
             # print("Map output: ", map_output, "process", os.getpid())
             for m in map_output:
                 q.put(m)
-                self.dq.append(m)
 
         q.put(("DONE", 1))
         # print("Size of the dq", q.qsize())
