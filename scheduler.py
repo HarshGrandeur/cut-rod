@@ -1,9 +1,11 @@
+#lazy
 import os, math, settings, sys, time
 from map_reduce import *
 from math import ceil
 from multiprocessing import Process, Queue
 from utils import chunked
 from multiprocessing import Manager
+from collections import defaultdict
 
 class Scheduler:
     """"
@@ -83,7 +85,12 @@ class Scheduler:
             for p in processes:
                 if p.is_alive():
                     p.join()
+            
+            ##In lazy strategy we get the size of the queue
+            #map_sizee=sys.getsizeof(queue)
+            #print("Size of mapper output: "+str(map_sizee))
             processes = [] 
+
             ## start shuffle and sort
             output = manager.Queue()
             p = Process(target=self.sort, args = [queue, output])
@@ -97,19 +104,32 @@ class Scheduler:
             self.combined = output.get()
             
             # Now here we start the reducers
+            reduce_time=defaultdict(list)
+            
+
             i = 0
             for chunk in chunked(self.combined.items(), ceil(len(self.combined) / self.n_reducers)):
                 file_path = self.output_dir + "/" + str(i) + ".txt"
                 i += 1
                 p = Process(target=self.reducer, args=(file_path, chunk))
                 p.start()
+                reduce_time[p.pid].append(time.time())
                 processes.append(p)
 
             for p in processes:
+                reduce_time[p.pid].append(time.time())
                 p.join()
 
             end_time = time.time()
             print("Running time : " + str(end_time - start_time))
+            
+            for k,v in reduce_time.items():
+                #print(len(v))
+                duration=v[1]-v[0]
+                print("Process "+str(k)+" takes duration "+str(duration))
+                # print(k) 
+                #print(v[0])
+                # print(v[1]-v[0])
 
     def mapper(self, file_path, map, q):
         contents = ''
