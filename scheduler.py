@@ -93,6 +93,7 @@ class Scheduler:
 
             ## start shuffle and sort
             output = manager.Queue()
+            sort_start=time.time()
             p = Process(target=self.sort, args = [queue, output])
             p.start()
             processes.append(p)
@@ -100,7 +101,8 @@ class Scheduler:
             for p in processes:
                 p.join()
             processes = []
-
+            sort_end=time.time()
+            print("Lazy Sorting time: "+str(sort_end-sort_start))
             self.combined = output.get()
             
             # Now here we start the reducers
