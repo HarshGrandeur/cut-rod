@@ -30,7 +30,7 @@ class Scheduler:
             self.file_path = self.input_dir + "/" + self.file_name
             self.file_size = os.stat(self.file_path)
         except FileNotFoundError:
-            print(f"File {self.file_name} does not exist. Aborting")
+            print("File {} does not exist. Aborting".format(self.file_name))
             sys.exit(1)
 
         # Read the file contents
@@ -124,6 +124,8 @@ class Scheduler:
             # print("Map output: ", map_output, "process", os.getpid())
             for m in map_output:
                 q.put(m)
+                ## added delay to allow queue to consume the items
+                time.sleep(0.001)
 
         q.put(("DONE", 1))
         # print("Size of the dq", q.qsize())
