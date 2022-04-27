@@ -93,7 +93,7 @@ class Scheduler:
 
             ## start shuffle and sort
             output = manager.Queue()
-            sort_start=time.time()
+            # sort_start=time.time()
             p = Process(target=self.sort, args = [queue, output])
             p.start()
             processes.append(p)
@@ -101,12 +101,12 @@ class Scheduler:
             for p in processes:
                 p.join()
             processes = []
-            sort_end=time.time()
-            print("Lazy Sorting time: "+str(sort_end-sort_start))
+            # sort_end=time.time()
+            # print("Lazy Sorting time: "+str(sort_end-sort_start))
             self.combined = output.get()
             
             # Now here we start the reducers
-            reduce_time=defaultdict(list)
+            # reduce_time=defaultdict(list)
             
 
             i = 0
@@ -115,20 +115,20 @@ class Scheduler:
                 i += 1
                 p = Process(target=self.reducer, args=(file_path, chunk))
                 p.start()
-                reduce_time[p.pid].append(time.time())
+                # reduce_time[p.pid].append(time.time())
                 processes.append(p)
 
             for p in processes:
-                reduce_time[p.pid].append(time.time())
+                # reduce_time[p.pid].append(time.time())
                 p.join()
 
             end_time = time.time()
             print("Running time : " + str(end_time - start_time))
             
-            for k,v in reduce_time.items():
+            # for k,v in reduce_time.items():
                 #print(len(v))
-                duration=v[1]-v[0]
-                print("Process "+str(k)+" takes duration "+str(duration))
+                # duration=v[1]-v[0]
+                # print("Process "+str(k)+" takes duration "+str(duration))
                 # print(k) 
                 #print(v[0])
                 # print(v[1]-v[0])
