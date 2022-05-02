@@ -156,7 +156,7 @@ class Scheduler:
             for m in map_output:
                 q.put(m)
                 ## added delay to allow queue to consume the items
-                sleep(0.001)
+                # sleep(0.001)
                 # print("adding to queue")
 
 
