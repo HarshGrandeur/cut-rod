@@ -102,6 +102,7 @@ class Scheduler:
             output = manager.Queue()
 
             ## start the sorting process
+            sleep(20)
             p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time])
             p.start()
             processes.append(p)
@@ -128,20 +129,23 @@ class Scheduler:
                 p.join()
 
             end_time = time.time()
-            print("Running time : " + str(end_time - start_time))
+            
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
-                duration=map_end_time[k]-v
-                print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration)
+                duration1=map_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
             print("================Sorting Information====================")
             for k,v in sort_st_time.items():
-                duration=sort_end_time[k]-v
-                print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration)
+                duration2=sort_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
             print("================Mapper Information====================")
             for k,v in reduce_st_time.items():
-                duration=reduce_end_time[k]-v
-                print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration)
+                duration3=reduce_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
+
+            print("JCT Running time : " + str(end_time - start_time))
+            print("Cost : " + str(duration1+duration2+duration3))
 
     def mapper(self, file_path, map, q, map_st_time,map_end_time):
         # q.cancel_join_thread()
