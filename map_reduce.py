@@ -2,7 +2,11 @@ import re
 
 def map(line):
     arr = re.split(r",", line)
-    return [(arr[0],1)]
+    output=[]
+    for elem in arr:
+        output.append((elem,1))
+    return output
+    #return [(arr[0],1)]
 
 def reduce(key, list):
     count = 0
