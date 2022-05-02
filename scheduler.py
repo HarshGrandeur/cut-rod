@@ -6,6 +6,7 @@ from utils import chunked
 import signal
 from collections import deque
 from multiprocessing import Manager
+from time import sleep
 
 class Scheduler:
     """"
@@ -21,6 +22,14 @@ class Scheduler:
         self.manager = Manager()
         self.queue = self.manager.Queue()
         self.combined = {}
+        self.map_st_time=self.manager.dict()
+        self.map_end_time=self.manager.dict()
+        self.sort_st_time=self.manager.dict()
+        self.sort_end_time=self.manager.dict()
+        self.reduce_st_time=self.manager.dict()
+        self.reduce_end_time=self.manager.dict()
+        self.map_duration=0
+        self.reduce_duration=0
 
     """
     Split input file into no of mappers
@@ -67,12 +76,20 @@ class Scheduler:
         ## after the child process exits
         with Manager() as manager:
             queue = manager.Queue()
+
+            map_st_time=manager.dict()
+            map_end_time=manager.dict()
+            reduce_st_time=manager.dict()
+            reduce_end_time=manager.dict()
+            sort_st_time=self.manager.dict()
+            sort_end_time=self.manager.dict()
+
             processes = []
             start_time = time.time()
             # Start all the mappers in parallel
             for i in range(self.n_mappers):
                 file_path = self.input_dir + "/" + str(i) + ".txt"
-                p = Process(target=self.mapper, args=(file_path, map, queue))
+                p = Process(target=self.mapper, args=(file_path, map, queue,  map_st_time,map_end_time))
                 p.start()
                 processes.append(p)
 
@@ -85,7 +102,7 @@ class Scheduler:
             output = manager.Queue()
 
             ## start the sorting process
-            p = Process(target=self.sort, args = [queue, output])
+            p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time])
             p.start()
             processes.append(p)
 
@@ -103,7 +120,7 @@ class Scheduler:
             for chunk in chunked(self.combined.items(), ceil(len(self.combined) / self.n_reducers)):
                 file_path = self.output_dir + "/" + str(i) + ".txt"
                 i += 1
-                p = Process(target=self.reducer, args=(file_path, chunk))
+                p = Process(target=self.reducer, args=(file_path, chunk, reduce_st_time,reduce_end_time))
                 p.start()
                 processes.append(p)
 
@@ -112,9 +129,23 @@ class Scheduler:
 
             end_time = time.time()
             print("Running time : " + str(end_time - start_time))
+            ########Printing#########
+            print("================Mapper Information====================")
+            for k,v in map_st_time.items():
+                duration=map_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration)
+            print("================Sorting Information====================")
+            for k,v in sort_st_time.items():
+                duration=sort_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration)
+            print("================Mapper Information====================")
+            for k,v in reduce_st_time.items():
+                duration=reduce_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration)
 
-    def mapper(self, file_path, map, q):
+    def mapper(self, file_path, map, q, map_st_time,map_end_time):
         # q.cancel_join_thread()
+        map_st_time[os.getpid()]=time.time()
         contents = ''
         with open(file_path, 'r') as f:
             contents = f.readlines()
@@ -124,18 +155,24 @@ class Scheduler:
             # print("Map output: ", map_output, "process", os.getpid())
             for m in map_output:
                 q.put(m)
+                sleep(0.001)
+                # print("adding to queue")
 
         q.put(("DONE", 1))
         # print("Size of the dq", q.qsize())
         ## terminate the process here
         # os.kill(os.getpid(), signal.SIGTERM)
+        map_end_time[os.getpid()]=time.time()
 
-    def sort(self, q, output):
+    def sort(self, q, output, sort_st_time,sort_end_time):
         # q.cancel_join_thread()
+        
         s = ("DONEE", 1)
         done_count = 0
+        sort_st_time[os.getpid()]=time.time()
         while done_count < self.n_mappers:
             s = q.get(True)
+            # print("removing from queue with queuesize ", q.qsize())
             key, value = s
             if key in self.combined:
                 self.combined[key].append(value)
@@ -147,12 +184,15 @@ class Scheduler:
         ## delete the "DONE" key
         self.combined.pop('DONE', None)
         output.put(self.combined)
+        sort_end_time[os.getpid()]=time.time()
 
-    def reducer(self, file_path, chunk):
+    def reducer(self, file_path, chunk, reduce_st_time,reduce_end_time):
+        reduce_st_time[os.getpid()]=time.time()
         s = ""
         for c in chunk:
             word, count = reduce(c[0], c[1])
             s += word + ": " + str(count) + "\n"
+        reduce_end_time[os.getpid()]=time.time()
         
         try:
             f = open(file_path, "w+")
