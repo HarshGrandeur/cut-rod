@@ -135,20 +135,23 @@ class Scheduler:
                 p.join()
 
             end_time = time.time()
-            print("Running time : " + str(end_time - start_time))
+            
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
-                duration=map_end_time[k]-v
-                print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration)
+                duration1=map_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
             print("================Sorting Information====================")
             for k,v in sort_st_time.items():
-                duration=sort_end_time[k]-v
-                print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration)
+                duration2=sort_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
             print("================Reducer Information====================")
             for k,v in reduce_st_time.items():
-                duration=reduce_end_time[k]-v
-                print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration)
+                duration3=reduce_end_time[k]-v
+                print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
+            
+            print("JCT Running time : " + str(end_time - start_time))
+            print("Cost: "+str(duration1+duration2+duration3))
             # for k,v in reduce_time.items():
                 #print(len(v))
                 # duration=v[1]-v[0]
