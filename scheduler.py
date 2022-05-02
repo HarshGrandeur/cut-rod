@@ -168,7 +168,7 @@ class Scheduler:
             for m in map_output:
                 q.put(m)
                 ## adding delay to allow queue time to consume data 
-                time.sleep(0.001)
+                #time.sleep(0.001)
 
         q.put(("DONE", 1))
         map_end_time[os.getpid()]=time.time()
