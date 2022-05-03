@@ -129,7 +129,7 @@ class Scheduler:
                 p.join()
 
             end_time = time.time()
-            
+            duration1, duration2, duration3 = 0, 0, 0
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
