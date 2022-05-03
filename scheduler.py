@@ -102,7 +102,7 @@ class Scheduler:
             output = manager.Queue()
 
             ## start the sorting process
-            sleep(20)
+            sleep(84)
             p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time])
             p.start()
             processes.append(p)
@@ -133,15 +133,15 @@ class Scheduler:
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
-                duration1=map_end_time[k]-v
+                duration1 = duration1 + map_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
             print("================Sorting Information====================")
             for k,v in sort_st_time.items():
-                duration2=sort_end_time[k]-v
+                duration2 = duration2+sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
             print("================Mapper Information====================")
             for k,v in reduce_st_time.items():
-                duration3=reduce_end_time[k]-v
+                duration3 = duration3 + reduce_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
 
             print("JCT Running time : " + str(end_time - start_time))
