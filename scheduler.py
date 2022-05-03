@@ -129,22 +129,26 @@ class Scheduler:
 
             end_time = time.time()
             duration1, duration2, duration3 = 0 , 0 ,0
+            cost_map,cost_sort,cost_reduce=0,0,0
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
                 duration1=duration1+map_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
+                cost_map+=duration1
             print("================Sorting Information====================")
             for k,v in sort_st_time.items():
                 duration2=duration2+sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
+                cost_sort+=duration2
             print("================Mapper Information====================")
             for k,v in reduce_st_time.items():
                 duration3=duration3+reduce_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
+                cost_reduce+=duration3
             
             print("JCT Running time : " + str(end_time - start_time))
-            print("Cost: "+str(duration1+duration2+duration3))
+            print("Cost: "+str(cost_map+cost_sort+cost_reduce))
 
 
     def mapper(self, file_path, map, q, map_st_time,map_end_time):
