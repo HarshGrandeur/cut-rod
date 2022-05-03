@@ -133,17 +133,17 @@ class Scheduler:
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
-                duration1=duration1+map_end_time[k]-v
+                duration1=map_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
                 cost_map+=duration1
             print("================Sorting Information====================")
             for k,v in sort_st_time.items():
-                duration2=duration2+sort_end_time[k]-v
+                duration2=sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
                 cost_sort+=duration2
             print("================Mapper Information====================")
             for k,v in reduce_st_time.items():
-                duration3=duration3+reduce_end_time[k]-v
+                duration3=reduce_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
                 cost_reduce+=duration3
             
