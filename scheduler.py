@@ -4,9 +4,10 @@ from math import ceil
 from multiprocessing import Process, JoinableQueue
 from utils import chunked
 import signal
-from collections import deque
+from collections import deque,defaultdict
 from multiprocessing import Manager
 from time import sleep
+
 
 class Scheduler:
     """"
@@ -86,13 +87,15 @@ class Scheduler:
 
             processes = []
             start_time = time.time()
+            num_part=2
             # Start all the mappers in parallel
             for i in range(self.n_mappers):
                 file_path = self.input_dir + "/" + str(i) + ".txt"
-                p = Process(target=self.mapper, args=(file_path, map, queue,  map_st_time,map_end_time))
+                p = Process(target=self.mapper, args=(file_path, i,map, queue,  map_st_time,map_end_time,num_part))
                 p.start()
                 processes.append(p)
 
+            
             # Next we perform sorting (this is the eager setting)
             # For the lazy setting, we need to join all the mappers
             # in the list `processes` (this means that sorting
@@ -102,10 +105,10 @@ class Scheduler:
             output = manager.Queue()
 
             ## start the sorting process
-            sleep(84)
-            p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time])
-            p.start()
-            processes.append(p)
+            for i in range(num_part):
+                p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
+                p.start()
+                processes.append(p)
 
             ## join all the processes so that main process does not exit before child completes
             for p in processes:
@@ -129,30 +132,41 @@ class Scheduler:
                 p.join()
 
             end_time = time.time()
-            duration1, duration2, duration3 = 0, 0, 0
+            duration1, duration2, duration3 = 0 , 0 ,0
             cost_map,cost_sort,cost_reduce=0,0,0
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
-                duration1 = map_end_time[k]-v
+                duration1=map_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
                 cost_map+=duration1
             print("================Sorting Information====================")
             for k,v in sort_st_time.items():
-                duration2 = duration2+sort_end_time[k]-v
+                duration2=sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
                 cost_sort+=duration2
             print("================Mapper Information====================")
             for k,v in reduce_st_time.items():
-                duration3 = duration3 + reduce_end_time[k]-v
+                duration3=reduce_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
                 cost_reduce+=duration3
-
+            
             print("JCT Running time : " + str(end_time - start_time))
-            print("Cost : " + str(cost_map+cost_sort+cost_reduce))
+            print("Cost: "+str(cost_map+cost_sort+cost_reduce))
 
-    def mapper(self, file_path, map, q, map_st_time,map_end_time):
+    def mapper(self, file_path, arg,map, q, map_st_time,map_end_time,num_partitions=2):
         # q.cancel_join_thread()
+        print("Mapper"+str(os.getpid()))
+        myfiles=list()
+        for i in range(0,num_partitions):
+            myfiles.append(open(self.input_dir + "/map"+str(arg)+"-part" +str(i)+'.txt', 'a+'))
+        
+        def compute_hash(st):
+            h = 0
+            for c in st:
+                h = (31 * h + ord(c)) & 0xFFFFFFFF
+            return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
+
         map_st_time[os.getpid()]=time.time()
         contents = ''
         with open(file_path, 'r') as f:
@@ -162,11 +176,20 @@ class Scheduler:
             map_output = map(line)
             # print("Map output: ", map_output, "process", os.getpid())
             for m in map_output:
+                if(m[0][0]=='-'):
+                    continue
+                hash=compute_hash(m[0])
+                val=hash%num_partitions
+                myfiles[val].write(str(m[0])+","+str(m[1]))
+                myfiles[val].write("\n")
                 q.put(m)
+
                 ## added delay to allow queue to consume the items
                 # sleep(0.001)
                 # print("adding to queue")
-
+            for i in range(0,num_partitions):
+                myfiles[i].write("end\n")
+                #myfiles[i].close()
 
         q.put(("DONE", 1))
         # print("Size of the dq", q.qsize())
@@ -174,26 +197,47 @@ class Scheduler:
         # os.kill(os.getpid(), signal.SIGTERM)
         map_end_time[os.getpid()]=time.time()
 
-    def sort(self, q, output, sort_st_time,sort_end_time):
+    def sort(self, q, output, sort_st_time,sort_end_time,part,file_path):
         # q.cancel_join_thread()
-        
-        s = ("DONEE", 1)
+        print(os.getpid())
+        combined=defaultdict()
+        #s = ("DONEE", 1)
         done_count = 0
         sort_st_time[os.getpid()]=time.time()
+        print("mapers ciunt ", self.n_mappers)
         while done_count < self.n_mappers:
-            s = q.get(True)
+            #s = q.get(True) #remove
+            #key, value = s #remove
             # print("removing from queue with queuesize ", q.qsize())
-            key, value = s
-            if key in self.combined:
-                self.combined[key].append(value)
-            else:
-                self.combined[key] = [value]
+            print(file_path+"/map"+str(done_count)+"-part" +str(part)+'.txt')
+            if os.path.exists(file_path+"/map"+str(done_count)+"-part" +str(part)+'.txt'):
+                f=open(file_path+"/map"+str(done_count)+"-part" +str(part)+'.txt','r')
+                content=f.readline()
+                print("contents", content)
+                while 1:
+                    print(str(os.getpid())+"-"+content)
+                    if(content=='end\n'):
+                        break
+                    else:
+                        try:
+                            val=content.split(',')
+                            key,value=val[0],val[1]
+                            if key in combined:
+                                combined[key].append(value)
+                            else:
+                                combined[key] = [value]
+                        except:
+                            continue
+                    content=f.readline()
+                        
+            
+            done_count += 1
             # print("Queue size :: ", q.qsize(), " is queue empty :: ", q.empty(), os.getpid(), s)
-            if s[0] == "DONE":
-                done_count += 1
+            # if s[0] == "DONE":
+            #     done_count += 1
         ## delete the "DONE" key
-        self.combined.pop('DONE', None)
-        output.put(self.combined)
+        #self.combined.pop('DONE', None)
+        output.put(combined)
         sort_end_time[os.getpid()]=time.time()
 
     def reducer(self, file_path, chunk, reduce_st_time,reduce_end_time):
