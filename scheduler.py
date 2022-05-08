@@ -75,6 +75,7 @@ class Scheduler:
     def launch_mappers(self):
         ## Using manager, as it manager queue in a separate process and it's not flused 
         ## after the child process exits
+        lazy = True
         with Manager() as manager:
             queue = manager.Queue()
 
@@ -95,36 +96,50 @@ class Scheduler:
                 p.start()
                 processes.append(p)
 
-            
+            ## use manager manged queue
+            output = manager.Queue()
             # Next we perform sorting (this is the eager setting)
             # For the lazy setting, we need to join all the mappers
             # in the list `processes` (this means that sorting
             # will have to wait until all mappers are done)
+            if lazy is False:
+                for i in range(num_part):
+                    p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
+                    p.start()
+                    processes.append(p)
 
-            ## use manager manged queue
-            output = manager.Queue()
+            
 
-            ## start the sorting process
-            for i in range(num_part):
-                p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
-                p.start()
-                processes.append(p)
 
             ## join all the processes so that main process does not exit before child completes
             for p in processes:
                 if p.is_alive():
                     exitcode = p.join()
                     # print("Skip join for process", p.pid, "exitcode", exitcode)
-                        
+            if lazy is True:
+            ## start the sorting process
+                processes = []
+                for i in range(num_part):
+                    p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
+                    p.start()
+                    processes.append(p)
+
+                for p in processes:
+                    if p.is_alive():
+                        exitcode = p.join()
+                        # print("Skip join for process", p.pid, "exitcode", exitcode)
+                            
             processes = []
-            self.combined = output.get()
+            # self.combined = output.get()
+            # print("combined : ", self.combined)
 
             # Now here we start the reducers
             i = 0
-            for chunk in chunked(self.combined.items(), ceil(len(self.combined) / self.n_reducers)):
+            for i in range(num_part):
                 file_path = self.output_dir + "/" + str(i) + ".txt"
-                i += 1
-                p = Process(target=self.reducer, args=(file_path, chunk, reduce_st_time,reduce_end_time))
+                sort_output = output.get()
+                # print("Sort output", sort_output)
+                p = Process(target=self.reducer, args=(file_path, sort_output, reduce_st_time,reduce_end_time))
                 p.start()
                 processes.append(p)
 
@@ -145,7 +160,7 @@ class Scheduler:
                 duration2=sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
                 cost_sort+=duration2
-            print("================Mapper Information====================")
+            print("================Reducer Information====================")
             for k,v in reduce_st_time.items():
                 duration3=reduce_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
@@ -159,7 +174,7 @@ class Scheduler:
         print("Mapper"+str(os.getpid()))
         myfiles=list()
         for i in range(0,num_partitions):
-            myfiles.append(open(self.input_dir + "/map"+str(arg)+"-part" +str(i)+'.txt', 'a+'))
+            myfiles.append(open(self.input_dir + "/map"+str(arg)+"-part" +str(i)+'.txt', 'w+'))
         
         def compute_hash(st):
             h = 0
@@ -182,14 +197,17 @@ class Scheduler:
                 val=hash%num_partitions
                 myfiles[val].write(str(m[0])+","+str(m[1]))
                 myfiles[val].write("\n")
+                myfiles[val].flush()
                 q.put(m)
 
                 ## added delay to allow queue to consume the items
                 # sleep(0.001)
                 # print("adding to queue")
-            for i in range(0,num_partitions):
-                myfiles[i].write("end\n")
+        for i in range(0,num_partitions):
+            myfiles[i].write("end\n")
                 #myfiles[i].close()
+            myfiles[i].flush()
+            myfiles[i].close()
 
         q.put(("DONE", 1))
         # print("Size of the dq", q.qsize())
@@ -198,53 +216,48 @@ class Scheduler:
         map_end_time[os.getpid()]=time.time()
 
     def sort(self, q, output, sort_st_time,sort_end_time,part,file_path):
-        # q.cancel_join_thread()
-        print(os.getpid())
-        combined=defaultdict()
-        #s = ("DONEE", 1)
-        done_count = 0
+
         sort_st_time[os.getpid()]=time.time()
-        print("mapers ciunt ", self.n_mappers)
-        while done_count < self.n_mappers:
-            #s = q.get(True) #remove
-            #key, value = s #remove
-            # print("removing from queue with queuesize ", q.qsize())
-            print(file_path+"/map"+str(done_count)+"-part" +str(part)+'.txt')
-            if os.path.exists(file_path+"/map"+str(done_count)+"-part" +str(part)+'.txt'):
-                f=open(file_path+"/map"+str(done_count)+"-part" +str(part)+'.txt','r')
+        # print("No of mappers ", self.n_mappers)
+        combined=defaultdict()
+        for map in range(self.n_mappers):
+            # print(file_path+"/map"+str(map)+"-part" +str(part)+'.txt')
+            if os.path.exists(file_path+"/map"+str(map)+"-part" +str(part)+'.txt'):
+                f=open(file_path+"/map"+str(map)+"-part" +str(part)+'.txt','r')
                 content=f.readline()
-                print("contents", content)
+                # print("contents", content, "inside process ", os.getpid())
                 while 1:
-                    print(str(os.getpid())+"-"+content)
+                    # time.sleep(0.01)
+                    # print("Read content ", content)
+                    # print(str(os.getpid())+"-"+ "filesize : ", os.path.getsize(file_path+"/map"+str(map)+"-part" +str(part) + '.txt'))
                     if(content=='end\n'):
+                        print("Found end while reading the file  ", file_path+"/map"+str(map)+"-part" +str(part))
                         break
                     else:
                         try:
                             val=content.split(',')
-                            key,value=val[0],val[1]
+                            key,value=val[0],val[1].rstrip("\n")
                             if key in combined:
                                 combined[key].append(value)
                             else:
                                 combined[key] = [value]
-                        except:
-                            continue
+                        except Exception as e:
+                            # print("Exception",e)
+                            pass
                     content=f.readline()
-                        
-            
-            done_count += 1
-            # print("Queue size :: ", q.qsize(), " is queue empty :: ", q.empty(), os.getpid(), s)
-            # if s[0] == "DONE":
-            #     done_count += 1
-        ## delete the "DONE" key
-        #self.combined.pop('DONE', None)
+                    
+                ## insert the dic into the output queue
         output.put(combined)
+                        
+
+        
         sort_end_time[os.getpid()]=time.time()
 
     def reducer(self, file_path, chunk, reduce_st_time,reduce_end_time):
         reduce_st_time[os.getpid()]=time.time()
         s = ""
-        for c in chunk:
-            word, count = reduce(c[0], c[1])
+        for key in chunk:
+            word, count = reduce(key, chunk[key])
             s += word + ": " + str(count) + "\n"
         reduce_end_time[os.getpid()]=time.time()
         
