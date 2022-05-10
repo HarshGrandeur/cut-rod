@@ -8,9 +8,10 @@ def main(argv):
     file_name = argv[1]
     n_mappers = int(argv[2])
     n_reducers =  int(argv[3])
+    setting = argv[4]
     sc = Scheduler(n_mappers=n_mappers, file_name=file_name, n_reducers=n_reducers)
     sc.split_input_files()
-    sc.launch_mappers()
+    sc.launch_mappers(setting)
 
 
 if __name__ == "__main__":
