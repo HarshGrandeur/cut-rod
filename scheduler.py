@@ -104,7 +104,7 @@ class Scheduler:
             start = lines
             file.close()
 
-    def launch_mappers(self,lazy,nimble):
+    def launch_mappers(self,lazy,sleep_val):
         ## Using manager, as it manager queue in a separate process and it's not flused 
         ## after the child process exits
        
@@ -139,8 +139,7 @@ class Scheduler:
             #rc = 610
             #sleep(14000/350 - 14000/610)
             if lazy is False:
-                if nimble is True:
-                    sleep(51.25)
+                    sleep(sleep_val)
                     for i in range(num_part):
                         p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
                         p.start()
@@ -163,7 +162,6 @@ class Scheduler:
                     if p.is_alive():
                         exitcode = p.join()
                         # print("Skip join for process", p.pid, "exitcode", exitcode)
-                
 
             processes = []
             # self.combined = output.get()
@@ -185,6 +183,7 @@ class Scheduler:
             end_time = time.time()
             duration1, duration2, duration3 = 0 , 0 ,0
             cost_map,cost_sort,cost_reduce=0,0,0
+            max_duration=0
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
@@ -196,6 +195,7 @@ class Scheduler:
                 duration2=sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
                 cost_sort+=duration2
+                max_duration=max(max_duration,duration2)
             print("================Reducer Information====================")
             for k,v in reduce_st_time.items():
                 duration3=reduce_end_time[k]-v
@@ -204,7 +204,7 @@ class Scheduler:
             
             print("JCT Running time : " + str(end_time - start_time))
             print("Cost: "+str(cost_map+cost_sort+cost_reduce))
-            
+            return max_duration
             
     def mapper(self, file_path, arg,map, q, map_st_time,map_end_time,num_partitions=2):
         # q.cancel_join_thread()
@@ -265,7 +265,7 @@ class Scheduler:
                 # print("contents", content, "inside process ", os.getpid())
                 flag=False
                 while 1:
-                    time.sleep(1.25)
+                    time.sleep(2)
                     for content in f:
                     #
                     # print("Read content ", content)
