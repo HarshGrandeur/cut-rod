@@ -8,10 +8,11 @@ def main(argv):
     file_name = argv[1]
     n_mappers = int(argv[2])
     n_reducers =  int(argv[3])
+    lazy=False
     sc = Scheduler(n_mappers=n_mappers, file_name=file_name, n_reducers=n_reducers)
     sc.split_input_files()
-    sc.launch_mappers()
-
+    rc=sc.launch_mappers(lazy)
+        
 
 if __name__ == "__main__":
    main(sys.argv)
