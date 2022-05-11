@@ -104,7 +104,7 @@ class Scheduler:
             start = lines
             file.close()
 
-    def launch_mappers(self,lazy):
+    def launch_mappers(self,lazy,nimble):
         ## Using manager, as it manager queue in a separate process and it's not flused 
         ## after the child process exits
        
@@ -139,12 +139,13 @@ class Scheduler:
             #rc = 610
             #sleep(14000/350 - 14000/610)
             if lazy is False:
-                for i in range(num_part):
-                    p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
-                    p.start()
-                    processes.append(p)
-
-            
+                if nimble is True:
+                    sleep(51.25)
+                    for i in range(num_part):
+                        p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
+                        p.start()
+                        processes.append(p)
+                
             ## join all the processes so that main process does not exit before child completes
             for p in processes:
                 if p.is_alive():
@@ -162,7 +163,8 @@ class Scheduler:
                     if p.is_alive():
                         exitcode = p.join()
                         # print("Skip join for process", p.pid, "exitcode", exitcode)
-                            
+                
+
             processes = []
             # self.combined = output.get()
             # print("combined : ", self.combined)
@@ -259,27 +261,33 @@ class Scheduler:
             # print(file_path+"/map"+str(map)+"-part" +str(part)+'.txt')
             if os.path.exists(file_path+"/map"+str(map)+"-part" +str(part)+'.txt'):
                 f=open(file_path+"/map"+str(map)+"-part" +str(part)+'.txt','r')
-                content=f.readline()
+                #content=f.readline()
                 # print("contents", content, "inside process ", os.getpid())
+                flag=False
                 while 1:
-                    # time.sleep(0.01)
+                    time.sleep(1.25)
+                    for content in f:
+                    #
                     # print("Read content ", content)
                     # print(str(os.getpid())+"-"+ "filesize : ", os.path.getsize(file_path+"/map"+str(map)+"-part" +str(part) + '.txt'))
-                    if(content=='end\n'):
-                        print("Found end while reading the file  ", file_path+"/map"+str(map)+"-part" +str(part))
+                        if(content.strip()=="end"):
+                            print("Found end while reading the file  ", file_path+"/map"+str(map)+"-part" +str(part))
+                            flag=True
+                            break
+                        else:
+                            try:
+                                val=content.split(',')
+                                key,value=val[0],val[1].rstrip("\n")
+                                if key in combined:
+                                    combined[key].append(value)
+                                else:
+                                    combined[key] = [value]
+                            except Exception as e:
+                                # print("Exception",e)
+                                pass
+                        #content=f.readline()
+                    if flag is True:
                         break
-                    else:
-                        try:
-                            val=content.split(',')
-                            key,value=val[0],val[1].rstrip("\n")
-                            if key in combined:
-                                combined[key].append(value)
-                            else:
-                                combined[key] = [value]
-                        except Exception as e:
-                            # print("Exception",e)
-                            pass
-                    content=f.readline()
                     
                 ## insert the dic into the output queue
         output.put(combined)
