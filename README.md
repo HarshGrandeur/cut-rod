@@ -16,7 +16,7 @@ The files with the word counts would be generated in the folder 'output_files'.
 Note: This map reduce implementation can also be extended to other tasks by simply replaceing the map and reduce functions defined in `map_and_reduce.py`. Currently the map reduce functions defined calculate the word count for a given text file. 
 
 Example of Nimble run, where Nimble has optimal cost and JCT.
-(bdml_3.6) richaranderia@10-16-96-49 cut-rod % python run.py devicestatus.txt 2 2
+`(bdml_3.6) richaranderia@10-16-96-49 cut-rod % python run.py devicestatus.txt 2 2
 Distribution of files:  [10137, 100000]
 Mapper90577
 Mapper90578
@@ -76,4 +76,4 @@ Process:  90718 start time  1652288145.015906 end time  1652288148.0923488 durat
 Process:  90721 start time  1652288148.2187788 end time  1652288148.471379 duration 0.25260019302368164
 Process:  90722 start time  1652288148.277142 end time  1652288148.60608 duration 0.32893800735473633
 JCT Running time : 54.872753858566284
-Cost: 65.35820412635803
+Cost: 65.35820412635803`
