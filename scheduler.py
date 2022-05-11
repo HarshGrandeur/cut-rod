@@ -36,41 +36,6 @@ class Scheduler:
     Split input file into no of mappers
     """
     def split_input_files(self):
-        # try:
-        #     self.file_path = self.input_dir + "/" + self.file_name
-        #     self.file_size = os.stat(self.file_path)
-        # except FileNotFoundError:
-        #     print("File {} does not exist. Aborting".format(self.file_name))
-        #     sys.exit(1)
-
-        # # Read the file contents
-        # contents = ""
-        # n_lines = 0
-        # with open(self.file_path, 'r') as f:
-        #     contents = f.readlines()
-
-        # # Split the file into n_mappers 
-        # for lines in contents:
-        #     n_lines += 1
-
-        # n_lines_in_each_split = math.floor(n_lines / self.n_mappers)
-        # line_number = 0
-
-        # file_descriptors = [''] * self.n_mappers
-        # for mapper in range(self.n_mappers):
-        #     file_path = self.input_dir + "/" + str(mapper) + ".txt"
-        #     file =  open(file_path, 'w')
-        #     file_descriptors[mapper] = file
-
-        # start = 0
-        # for line in contents:
-        #     index = start % self.n_mappers
-        #     file_descriptors[index].write(line)
-        #     start += 1
-
-        # # Close all file descriptors
-        # for mapper in range(self.n_mappers):
-        #     file_descriptors[mapper].close()
         try:
             self.file_path = self.input_dir + "/" + self.file_name
             self.file_size = os.stat(self.file_path)
@@ -87,11 +52,15 @@ class Scheduler:
         n_lines = len(contents)
 
         R = np.random.RandomState(11) # To ensure consistent results, ideally random state should not be set
+        # R=np.random
         s = []
         prev = 0
         for m in range(self.n_mappers - 1):
             s.append(R.randint(prev, n_lines - 1 + m -self.n_mappers + 1))
             prev = s[-1]
+
+        # s.append(int(n_lines/16))
+        # s.append(int((15*n_lines)/16))
 
         s.append(n_lines)
         print('Distribution of files: ', s)
@@ -136,8 +105,7 @@ class Scheduler:
             # For the lazy setting, we need to join all the mappers
             # in the list `processes` (this means that sorting
             # will have to wait until all mappers are done)
-            #rc = 610
-            #sleep(14000/350 - 14000/610)
+
             if lazy is False:
                     sleep(sleep_val)
                     for i in range(num_part):
@@ -184,27 +152,36 @@ class Scheduler:
             duration1, duration2, duration3 = 0 , 0 ,0
             cost_map,cost_sort,cost_reduce=0,0,0
             max_duration=0
+            max_sze=0
             ########Printing#########
             print("================Mapper Information====================")
             for k,v in map_st_time.items():
                 duration1=map_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",map_end_time[k], "duration",duration1)
                 cost_map+=duration1
+                
             print("================Sorting Information====================")
+            i=0
             for k,v in sort_st_time.items():
                 duration2=sort_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",sort_end_time[k], "duration",duration2)
                 cost_sort+=duration2
                 max_duration=max(max_duration,duration2)
+                for j in range(0,num_part):
+                    sze=os.path.getsize(self.input_dir + "/map"+str(i)+"-part" +str(j)+'.txt')
+                    max_sze=max(sze,max_sze)
+                i+=1
+                pc=max_sze/max_duration
             print("================Reducer Information====================")
             for k,v in reduce_st_time.items():
                 duration3=reduce_end_time[k]-v
                 print("Process: ",k,"start time ",v, "end time ",reduce_end_time[k], "duration",duration3)
                 cost_reduce+=duration3
+                
             
             print("JCT Running time : " + str(end_time - start_time))
             print("Cost: "+str(cost_map+cost_sort+cost_reduce))
-            return max_duration
+            return max_duration,pc
             
     def mapper(self, file_path, arg,map, q, map_st_time,map_end_time,num_partitions=2):
         # q.cancel_join_thread()
