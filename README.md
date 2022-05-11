@@ -2,6 +2,7 @@
 This is a simple Map Reduce framework which has been implemented to demo Nimble algorithm.
 
 https://www.usenix.org/conference/nsdi21/presentation/zhang-hong
+
 The final code resides in the `eager-new` branch.
 * How to run the code:
 Use the command `python run.py <Input file location> <Number of mappers> <Number of reducers>`
