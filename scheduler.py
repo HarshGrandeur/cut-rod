@@ -3,7 +3,7 @@ from map_reduce import *
 from math import ceil
 from multiprocessing import Process, JoinableQueue
 from utils import chunked
-import signal
+import signal, numpy as np
 from collections import deque,defaultdict
 from multiprocessing import Manager
 from time import sleep
@@ -36,6 +36,41 @@ class Scheduler:
     Split input file into no of mappers
     """
     def split_input_files(self):
+        # try:
+        #     self.file_path = self.input_dir + "/" + self.file_name
+        #     self.file_size = os.stat(self.file_path)
+        # except FileNotFoundError:
+        #     print("File {} does not exist. Aborting".format(self.file_name))
+        #     sys.exit(1)
+
+        # # Read the file contents
+        # contents = ""
+        # n_lines = 0
+        # with open(self.file_path, 'r') as f:
+        #     contents = f.readlines()
+
+        # # Split the file into n_mappers 
+        # for lines in contents:
+        #     n_lines += 1
+
+        # n_lines_in_each_split = math.floor(n_lines / self.n_mappers)
+        # line_number = 0
+
+        # file_descriptors = [''] * self.n_mappers
+        # for mapper in range(self.n_mappers):
+        #     file_path = self.input_dir + "/" + str(mapper) + ".txt"
+        #     file =  open(file_path, 'w')
+        #     file_descriptors[mapper] = file
+
+        # start = 0
+        # for line in contents:
+        #     index = start % self.n_mappers
+        #     file_descriptors[index].write(line)
+        #     start += 1
+
+        # # Close all file descriptors
+        # for mapper in range(self.n_mappers):
+        #     file_descriptors[mapper].close()
         try:
             self.file_path = self.input_dir + "/" + self.file_name
             self.file_size = os.stat(self.file_path)
@@ -44,38 +79,35 @@ class Scheduler:
             sys.exit(1)
 
         # Read the file contents
-        contents = ""
+        contents = []
         n_lines = 0
         with open(self.file_path, 'r') as f:
             contents = f.readlines()
 
-        # Split the file into n_mappers 
-        for lines in contents:
-            n_lines += 1
+        n_lines = len(contents)
 
-        n_lines_in_each_split = math.floor(n_lines / self.n_mappers)
-        line_number = 0
+        R = np.random.RandomState(11) # To ensure consistent results, ideally random state should not be set
+        s = []
+        prev = 0
+        for m in range(self.n_mappers - 1):
+            s.append(R.randint(prev, n_lines - 1 + m -self.n_mappers + 1))
+            prev = s[-1]
 
-        file_descriptors = [''] * self.n_mappers
-        for mapper in range(self.n_mappers):
-            file_path = self.input_dir + "/" + str(mapper) + ".txt"
-            file =  open(file_path, 'w')
-            file_descriptors[mapper] = file
+        s.append(n_lines)
+        print('Distribution of files: ', s)
 
         start = 0
-        for line in contents:
-            index = start % self.n_mappers
-            file_descriptors[index].write(line)
-            start += 1
+        for mapper, lines in enumerate(s):
+            file_path = self.input_dir + "/" + str(mapper) + ".txt"
+            file = open(file_path, 'w')
+            file.writelines(contents[start:lines])
+            start = lines
+            file.close()
 
-        # Close all file descriptors
-        for mapper in range(self.n_mappers):
-            file_descriptors[mapper].close()
-
-    def launch_mappers(self):
+    def launch_mappers(self,lazy):
         ## Using manager, as it manager queue in a separate process and it's not flused 
         ## after the child process exits
-        lazy = True
+       
         with Manager() as manager:
             queue = manager.Queue()
 
@@ -88,8 +120,10 @@ class Scheduler:
 
             processes = []
             start_time = time.time()
-            num_part=2
+            num_part=self.n_mappers
             # Start all the mappers in parallel
+            # if lazy is false:
+            #     sleep(0.01)
             for i in range(self.n_mappers):
                 file_path = self.input_dir + "/" + str(i) + ".txt"
                 p = Process(target=self.mapper, args=(file_path, i,map, queue,  map_st_time,map_end_time,num_part))
@@ -102,6 +136,8 @@ class Scheduler:
             # For the lazy setting, we need to join all the mappers
             # in the list `processes` (this means that sorting
             # will have to wait until all mappers are done)
+            #rc = 610
+            #sleep(14000/350 - 14000/610)
             if lazy is False:
                 for i in range(num_part):
                     p = Process(target=self.sort, args = [queue, output,sort_st_time,sort_end_time,i,self.input_dir])
@@ -109,8 +145,6 @@ class Scheduler:
                     processes.append(p)
 
             
-
-
             ## join all the processes so that main process does not exit before child completes
             for p in processes:
                 if p.is_alive():
@@ -168,7 +202,8 @@ class Scheduler:
             
             print("JCT Running time : " + str(end_time - start_time))
             print("Cost: "+str(cost_map+cost_sort+cost_reduce))
-
+            
+            
     def mapper(self, file_path, arg,map, q, map_st_time,map_end_time,num_partitions=2):
         # q.cancel_join_thread()
         print("Mapper"+str(os.getpid()))
@@ -248,9 +283,6 @@ class Scheduler:
                     
                 ## insert the dic into the output queue
         output.put(combined)
-                        
-
-        
         sort_end_time[os.getpid()]=time.time()
 
     def reducer(self, file_path, chunk, reduce_st_time,reduce_end_time):
