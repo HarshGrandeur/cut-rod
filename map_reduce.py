@@ -10,6 +10,9 @@ def map(line):
 def reduce(key, list):
     count = 0
     for val in list:
-        count += val
+        try:
+            count += val
+        except:
+            pass
 
     return (key, count)
